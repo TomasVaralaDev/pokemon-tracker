@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+// Tyypit ja komponentit
 import type { PokemonBasic, UserCollection } from './types';
 import { PokemonCard } from './PokemonCard';
 import { PokemonModal } from './PokemonModal';
@@ -6,12 +7,14 @@ import { Toast } from './Toast';
 import { StatsModal } from './StatsModal';
 
 // --- FIREBASE IMPORTS ---
+// Firebase-kirjastot autentikaatioon ja tietokantaan
 import { auth, googleProvider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-// KORJAUS 1: Lisätty 'type' importtiin
 import type { User } from 'firebase/auth'; 
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
+// --- VAKIOT ---
+// Generaatioiden rajat (ID:t)
 const GENERATIONS = [
   { id: 0, name: 'All', start: 1, end: 1025 },
   { id: 1, name: 'Gen 1', start: 1, end: 151 },
@@ -25,55 +28,66 @@ const GENERATIONS = [
   { id: 9, name: 'Gen 9', start: 906, end: 1025 },
 ];
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 50; // Kuinka monta Pokemonia ladataan kerralla (Infinite Scroll)
 
+// Tyypit suodattimille
 type FilterMode = 'all' | 'caught' | 'missing' | 'shiny';
 type SortOrder = 'id-asc' | 'id-desc' | 'name-asc' | 'name-desc';
 
 function App() {
+  // --- STATE (TILA) ---
+  
+  // Data: Kaikki Pokemonit ja käyttäjän kokoelma
   const [pokemons, setPokemons] = useState<PokemonBasic[]>([]);
+  const [collection, setCollection] = useState<UserCollection>(() => {
+    // Alustus: Ladataan localStoragesta heti, jotta sivu näkyy nopeasti
+    const saved = localStorage.getItem('poke-collection');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // UI-tilat: Filtterit, haku, sivutus
   const [selectedGen, setSelectedGen] = useState(GENERATIONS[0]);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('id-asc');
   
+  // Asetukset & Modaalit
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
-
   const [selectedPokemonId, setSelectedPokemonId] = useState<number | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Haku & Ilmoitukset
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'info' } | null>(null);
-  const [showStats, setShowStats] = useState(false);
 
-  // --- USER STATE ---
+  // Käyttäjä & Autentikaatio
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Refit DOM-elementteihin (Haku, Tiedoston tuonti)
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [collection, setCollection] = useState<UserCollection>(() => {
-    const saved = localStorage.getItem('poke-collection');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const [loading, setLoading] = useState(true);
-
-  // --- KORJAUS 2: SIIRRETTY TÄMÄ FUNKTIO YLÖS (ennen useEffectejä) ---
+  // --- APUFUNKTIOT ---
+  
+  // Näyttää Toast-ilmoituksen ruudulla
   const showToastMsg = (msg: string, type: 'success' | 'info' = 'success') => {
     setToast({ message: msg, type });
   };
 
-  // --- 1. FIREBASE AUTH LISTENER ---
+  // --- FIREBASE LOGIIKKA ---
+
+  // 1. Auth Listener: Kuuntelee kirjautumismuutoksia (Sisään/Ulos)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
       
-      // Jos kirjaudutaan ULOS, palataan paikalliseen dataan
+      // Jos kirjaudutaan ULOS, palataan käyttämään selaimen paikallista dataa
       if (!currentUser) {
         const saved = localStorage.getItem('poke-collection');
         setCollection(saved ? JSON.parse(saved) : {});
@@ -83,18 +97,19 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // --- 2. FIREBASE DATA SYNC (REALTIME) ---
+  // 2. Data Sync: Synkronoi datan Firebasesta reaaliajassa
   useEffect(() => {
     if (!user) return;
 
+    // Kuunnellaan käyttäjän omaa dokumenttia tietokannassa
     const unsubFirestore = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.collection) {
-           setCollection(data.collection);
+           setCollection(data.collection); // Päivitetään sovelluksen tila pilvestä
         }
       } else {
-        // Jos käyttäjällä ei ole dataa, tallennetaan nykyinen (local) data
+        // Jos käyttäjä on uusi (ei dataa pilvessä), tallennetaan nykyinen local-data sinne
         if (Object.keys(collection).length > 0) {
            setDoc(doc(db, 'users', user.uid), { collection }, { merge: true });
            showToastMsg('Local data synced to cloud!', 'success');
@@ -107,13 +122,13 @@ function App() {
 
     return () => unsubFirestore();
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-  // (Poistettu collection dependency loopin estämiseksi)
 
-  // --- 3. HELPER: SAVE DATA ---
+  // 3. Tallennuslogiikka: Päättää tallennetaanko pilveen vai selaimeen
   const saveCollection = async (newCollection: UserCollection) => {
-    setCollection(newCollection); 
+    setCollection(newCollection); // Päivitetään UI heti (Optimistinen päivitys)
 
     if (user) {
+      // Jos kirjautunut -> Tallenna Firestoreen
       try {
         await setDoc(doc(db, 'users', user.uid), { collection: newCollection }, { merge: true });
       } catch (e) {
@@ -121,10 +136,12 @@ function App() {
         showToastMsg('Error saving to cloud', 'info');
       }
     } else {
+      // Jos ei kirjautunut -> Tallenna LocalStorageen
       localStorage.setItem('poke-collection', JSON.stringify(newCollection));
     }
   };
 
+  // Kirjautumistoiminnot
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -139,31 +156,39 @@ function App() {
     await signOut(auth);
   };
 
-  // --- NORMAL EFFECTS ---
+  // --- EFEKTIT (Effects) ---
+
+  // Dark Mode -vaihtaja
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
     localStorage.setItem('darkMode', darkMode.toString());
   }, [darkMode]);
 
+  // Näppäinoikotiet (Search, Escape) ja Infinite Scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Paina '/' avataksesi haun
       if ((e.key === '/' || (e.ctrlKey && e.key === 'k')) && !selectedPokemonId) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
+      // Paina 'Esc' sulkeaksesi modaalit tai tyhjentääksesi haun
       if (e.key === 'Escape') {
         if (selectedPokemonId) setSelectedPokemonId(null);
         else if (showStats) setShowStats(false);
         else if (searchTerm) setSearchTerm('');
       }
     };
+    
+    // Lataa lisää Pokemoneja kun rullataan alas
     const handleScroll = () => {
       if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 300) {
         setVisibleCount(prev => prev + ITEMS_PER_PAGE);
       }
       setShowScrollTop(window.scrollY > 300);
     };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -172,6 +197,7 @@ function App() {
     };
   }, [selectedPokemonId, showStats, searchTerm]);
 
+  // Alustus: Hae Pokemon-lista API:sta (ajetaan kerran)
   useEffect(() => {
     fetch('https://pokeapi.co/api/v2/pokemon?limit=1025')
       .then(res => res.json())
@@ -186,6 +212,9 @@ function App() {
       });
   }, []);
 
+  // --- KÄSITTELIJÄT (Handlers) ---
+
+  // Generaation vaihto
   const handleGenChange = (gen: typeof GENERATIONS[0]) => {
     setSelectedGen(gen);
     setFilterMode('all'); 
@@ -194,6 +223,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Nappaa Pokemon (Caught)
   const toggleCaught = (id: number) => {
     const isCaught = collection[id]?.caught;
     const newCol = { ...collection, [id]: { ...collection[id], caught: !isCaught } };
@@ -206,6 +236,7 @@ function App() {
     }
   };
 
+  // Merkkaa Shinyksi
   const toggleShiny = (id: number) => {
     const isShiny = collection[id]?.shiny;
     const newCol = { ...collection, [id]: { ...collection[id], shiny: !isShiny } };
@@ -215,6 +246,7 @@ function App() {
     if (!isShiny) showToastMsg(`Marked as Shiny!`, 'info');
   };
 
+  // Massatoiminnot (Merkkaa kaikki / Poista kaikki)
   const handleBulkAction = (action: 'catch' | 'release') => {
     if (action === 'release') {
       if (!window.confirm(`Clear all marks for ${searchTerm ? 'search' : selectedGen.name}?`)) return;
@@ -229,6 +261,7 @@ function App() {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
+  // Varmuuskopiointi (Export JSON)
   const handleExport = () => {
     const dataStr = JSON.stringify(collection, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -242,6 +275,7 @@ function App() {
     showToastMsg('Backup downloaded!', 'info');
   };
 
+  // Varmuuskopion palautus (Import JSON)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -259,6 +293,9 @@ function App() {
     e.target.value = '';
   };
 
+  // --- LOGIIKKA: FILTTERÖINTI JA DATA ---
+  
+  // Suodata Pokemonit (Haku, Gen, Tila)
   const filteredPokemons = (() => {
     const list = searchTerm 
       ? pokemons.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -269,6 +306,7 @@ function App() {
     if (filterMode === 'missing') filtered = list.filter(p => !collection[p.id]?.caught);
     if (filterMode === 'shiny') filtered = list.filter(p => collection[p.id]?.shiny);
 
+    // Järjestäminen
     return [...filtered].sort((a, b) => {
       if (sortOrder === 'id-desc') return b.id - a.id;
       if (sortOrder === 'name-asc') return a.name.localeCompare(b.name);
@@ -277,34 +315,41 @@ function App() {
     });
   })();
 
+  // Hakuehdotukset
   const suggestions = searchTerm.length >= 2 
     ? pokemons.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 5) 
     : [];
 
+  // Leikkaa lista näkyville (Infinite Scroll varten)
   const visiblePokemons = filteredPokemons.slice(0, visibleCount);
   
+  // Laske statistiikkaa
   const totalCaughtCount = pokemons.filter(p => collection[p.id]?.caught).length;
   const totalShinyCount = pokemons.filter(p => collection[p.id]?.shiny).length;
+  
+  // Laske progress bar nykyiselle näkymälle
   const baseListForStats = searchTerm 
     ? pokemons.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : pokemons.filter(p => p.id >= selectedGen.start && p.id <= selectedGen.end);
   const caughtInView = baseListForStats.filter(p => collection[p.id]?.caught).length;
 
+  // --- RENDERÖINTI (UI) ---
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 transition-colors duration-300 p-4 md:p-8">
+      {/* Toast-ilmoitukset */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       
       <div className="max-w-6xl mx-auto">
         
-        {/* HEADER: LOGIN & DARKMODE */}
+        {/* YLÄPALKKI: STATS, LOGIN & DARKMODE */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-           {/* LEFT: Stats & Login */}
+           {/* VASEN: Stats-nappi & Kirjautuminen */}
            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
               <button onClick={() => setShowStats(true)} className="p-2 px-3 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 font-bold text-sm flex items-center gap-2">
                  📊 <span className="hidden sm:inline">Stats</span>
               </button>
 
-              {/* LOGIN BUTTON */}
+              {/* Kirjautumisnappi tai Käyttäjätiedot */}
               {!authLoading && (
                 user ? (
                   <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-800">
@@ -321,11 +366,12 @@ function App() {
               )}
            </div>
           
+          {/* KESKELLÄ: Otsikko */}
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 dark:text-white tracking-tight text-center flex-1 order-first md:order-none">
             Pokémon Tracker
           </h1>
           
-          {/* RIGHT: Dark Mode */}
+          {/* OIKEA: Dark Mode -nappi */}
           <div className="w-full md:w-auto flex justify-end">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-yellow-400 hover:scale-110 transition">
               {darkMode ? '☀️' : '🌙'}
@@ -333,6 +379,7 @@ function App() {
           </div>
         </div>
 
+        {/* PROGRESS BAR (Edistymispalkki) */}
         {!loading && (
           <div className="max-w-2xl mx-auto mb-8 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
              <div className="flex justify-between items-end mb-2">
@@ -347,6 +394,7 @@ function App() {
           </div>
         )}
 
+        {/* HAKUKENTTÄ */}
         <div className="max-w-md mx-auto mb-4 relative" ref={searchContainerRef}>
           <input 
             ref={searchInputRef}
@@ -358,6 +406,7 @@ function App() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
           {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">✖</button>}
           
+          {/* Hakuehdotukset */}
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
               {suggestions.map(p => (
@@ -370,6 +419,7 @@ function App() {
           )}
         </div>
 
+        {/* FILTTERIT JA LAJITTELU */}
         <div className="flex flex-col md:flex-row justify-center items-center gap-4 mb-6">
           <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as SortOrder)} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white py-2 px-4 rounded-lg font-bold shadow-sm cursor-pointer">
              <option value="id-asc">Lowest #</option>
@@ -386,6 +436,7 @@ function App() {
           </div>
         </div>
 
+        {/* GENERAATIOVALIKKO (Piilotettu haun aikana) */}
         {!searchTerm && (
           <div className="flex flex-wrap justify-center gap-2 mb-6 sticky top-2 z-20 bg-slate-100/95 dark:bg-slate-900/95 p-3 rounded-xl backdrop-blur-sm border border-slate-200 dark:border-slate-700 shadow-sm">
             {GENERATIONS.map(gen => (
@@ -396,6 +447,7 @@ function App() {
           </div>
         )}
 
+        {/* LISTAN TILASTOT JA NAPIT */}
         {!loading && (
            <div className="mb-8 text-center">
              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -413,6 +465,7 @@ function App() {
            </div>
         )}
 
+        {/* POKEMON KORTIT (GRID) */}
         {loading ? (
           <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div></div>
         ) : (
@@ -432,17 +485,21 @@ function App() {
           </div>
         )}
         
+        {/* LATAUSILMOITUS (Infinite Scroll) */}
         {!loading && visibleCount < filteredPokemons.length && <div className="text-center py-8 text-slate-400 animate-pulse">Scroll for more...</div>}
 
+        {/* MODAALIT */}
         <PokemonModal pokemonId={selectedPokemonId} onClose={() => setSelectedPokemonId(null)} key={selectedPokemonId} />
         {showStats && <StatsModal totalPokemon={pokemons.length} totalCaught={totalCaughtCount} totalShiny={totalShinyCount} generations={GENERATIONS} collection={collection} onClose={() => setShowStats(false)} />}
 
+        {/* SCROLL TO TOP -NAPPI */}
         {showScrollTop && (
           <button onClick={scrollToTop} className="fixed bottom-20 right-6 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 z-40 transition-all animate-bounce">
             ⬆️
           </button>
         )}
 
+        {/* ALAPALKKI (Import/Export) */}
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-3 flex justify-center gap-4 text-sm z-30">
            <button onClick={handleExport} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 font-semibold">Export Data</button>
            <span>|</span>

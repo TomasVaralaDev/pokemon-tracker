@@ -1,22 +1,23 @@
-// Rajapinta API:sta tulevalle listalle
+// --- API-DATA ---
+// Tämä määrittelee, miltä Pokemonin perustiedot näyttävät listassa
 export interface PokemonBasic {
-    id: number;
-    name: string;
-    url: string;
-  }
-  
-  // Yksittäisen tallennuksen tietotyyppi
-  export interface CollectionEntry {
-    caught: boolean;
-    // Tänne on helppo lisätä myöhemmin:
-    // isShiny?: boolean;
-    // caughtInGame?: string;
-  }
-  
-  // Koko varaston tietotyyppi (avain on ID)
-  export interface UserCollection {
-    [id: number]: {
-      caught: boolean;
-      shiny?: boolean; // <--- UUSI: Kysymysmerkki tarkoittaa "vapaaehtoinen"
-    };
-    }
+  id: number;
+  name: string;
+  url: string;
+}
+
+// --- KÄYTTÄJÄN DATA ---
+
+// Tämä on yhden yksittäisen Pokemonin tallennustiedot
+export interface CollectionEntry {
+  caught: boolean;  // Onko napattu? (Pakollinen)
+  shiny?: boolean;  // Onko shiny? (? tarkoittaa vapaaehtoista, ei pakko olla olemassa)
+}
+
+// Tämä on koko varaston rakenne
+// Se on "sanakirja" (Dictionary), jossa:
+// - Avain (key) on Pokemonin ID (numero)
+// - Arvo (value) on yllä määritelty CollectionEntry
+export interface UserCollection {
+  [id: number]: CollectionEntry;
+}

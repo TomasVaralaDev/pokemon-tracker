@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 
+// --- RAJAPINNAT (INTERFACES) ---
+// Määrittelevät datan muodon, jotta TypeScript osaa auttaa virheiden kanssa.
+
 interface ModalProps {
   pokemonId: number | null;
   onClose: () => void;
@@ -13,6 +16,7 @@ interface PokemonDetails {
   stats: { base_stat: number; stat: { name: string } }[];
 }
 
+// Rekursiivinen tyyppi evoluutioketjulle (lapsi voi sisältää lapsia)
 interface EvolutionNode {
   species_name: string;
   min_level: number | null;
@@ -22,6 +26,7 @@ interface EvolutionNode {
   species_url: string;
 }
 
+// API:n raakadata evoluutioketjulle (monimutkainen rakenne)
 interface RawEvolutionLink {
   species: { name: string; url: string };
   evolution_details: {
@@ -32,7 +37,7 @@ interface RawEvolutionLink {
   evolves_to: RawEvolutionLink[];
 }
 
-// UUSI: Rajapinta tyyppidatalle (poistaa 'any'-virheen laskennasta)
+// Tyyppien heikkouksien laskentaan tarvittava data
 interface TypeData {
   damage_relations: {
     double_damage_from: { name: string }[];
@@ -41,6 +46,7 @@ interface TypeData {
   };
 }
 
+// Lajitiedot (kuvaustekstit, generaatio)
 interface PokemonSpecies {
   flavor_text_entries: {
     flavor_text: string;
@@ -54,13 +60,16 @@ interface PokemonSpecies {
   evolution_chain: { url: string };
 }
 
+// --- APUFUNKTIOT JA VAKIOT ---
+
 const cleanName = (name: string) => {
   return name.replace('extended-', '').replace('original-', '').replace('-', ' ');
 };
 
+// Kaivaa ID:n URL-osoitteesta (esim. ".../pokemon/1/" -> "1")
 const getIdFromUrl = (url: string) => url.split('/').filter(Boolean).pop();
 
-// --- STATS CONFIG ---
+// Värit statsi-palkeille
 const STAT_COLORS: Record<string, string> = {
   hp: 'bg-green-500',
   attack: 'bg-red-500',
@@ -70,6 +79,7 @@ const STAT_COLORS: Record<string, string> = {
   speed: 'bg-cyan-500',
 };
 
+// Lyhenteet statsi-nimille
 const STAT_NAMES: Record<string, string> = {
   hp: 'HP',
   attack: 'ATK',
@@ -79,11 +89,14 @@ const STAT_NAMES: Record<string, string> = {
   speed: 'SPD',
 };
 
+// --- ALIKOMPONENTTI: EVOLUTION CHAIN ---
+// Piirtää evoluutioketjun rekursiivisesti (kutsuu itseään, jos evoluutioita on lisää)
 function EvoChain({ chain }: { chain: EvolutionNode }) {
   const id = getIdFromUrl(chain.species_url);
   
   return (
     <div className="flex flex-row items-center gap-2 md:gap-4">
+       {/* Nykyinen Pokemon */}
        <div className="flex flex-col items-center min-w-[80px]">
         <img 
           src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`} 
@@ -96,16 +109,19 @@ function EvoChain({ chain }: { chain: EvolutionNode }) {
          </span>
        </div>
        
+       {/* Jos on seuraavia muotoja, piirretään ne tässä */}
        {chain.evolves_to.length > 0 && (
          <div className="flex flex-col gap-2"> 
            {chain.evolves_to.map((next, i) => (
              <div key={i} className="flex flex-row items-center">
+               {/* Nuoli ja ehto (Level, Item, jne.) */}
                <div className="flex flex-col items-center px-1 md:px-2">
                  <span className="text-slate-400 text-lg dark:text-slate-500">→</span>
                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono text-center leading-none max-w-[60px]">
                    {next.min_level ? `Lvl ${next.min_level}` : next.item ? 'Item' : next.trigger_name ? cleanName(next.trigger_name) : ''}
                  </span>
                </div>
+               {/* Rekursiivinen kutsu: Piirrä seuraava vaihe */}
                <EvoChain chain={next} />
              </div>
            ))}
@@ -115,7 +131,9 @@ function EvoChain({ chain }: { chain: EvolutionNode }) {
   );
 }
 
+// --- PÄÄKOMPONENTTI: POKEMON MODAL ---
 export function PokemonModal({ pokemonId, onClose }: ModalProps) {
+  // Tilan hallinta (Data)
   const [details, setDetails] = useState<PokemonDetails | null>(null);
   const [species, setSpecies] = useState<PokemonSpecies | null>(null);
   const [evoChain, setEvoChain] = useState<EvolutionNode | null>(null);
@@ -131,26 +149,27 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
     steel: 'bg-zinc-400', fairy: 'bg-pink-300',
   };
 
+  // --- DATAN HAKU ---
+  // Ajetaan aina kun pokemonId muuttuu (eli modaali avataan)
   useEffect(() => {
     if (!pokemonId) return;
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 1. Basic Data
+        // 1. Perustiedot (Nimi, kuva, statsit, tyypit)
         const basicRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
         const basicData = await basicRes.json();
         setDetails(basicData);
 
-        // 2. Type Weakness Calculation
-        // KORJAUS 1: Määritellään 't'
+        // 2. Heikkouksien laskenta (Type Weakness)
+        // Haetaan data jokaiselle tyypille (esim. Fire ja Flying)
         const typePromises = basicData.types.map((t: { type: { url: string } }) => fetch(t.type.url).then(res => res.json()));
         const typeDatas = await Promise.all(typePromises);
 
         // Lasketaan kertoimet kaikille 18 tyypille
         const damageRelations: Record<string, number> = {};
         
-        // KORJAUS 2: Käytetään TypeData-rajapintaa 'any':n sijaan
         typeDatas.forEach((typeData: TypeData) => {
            typeData.damage_relations.double_damage_from.forEach((t) => {
              damageRelations[t.name] = (damageRelations[t.name] || 1) * 2;
@@ -163,19 +182,21 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
            });
         });
 
+        // Suodatetaan listaan vain ne, jotka tekevät >1x vahinkoa (esim. 2x tai 4x)
         const weakList = Object.keys(damageRelations).filter(type => (damageRelations[type] || 0) > 1);
         setWeaknesses(weakList);
 
-        // 3. Species Data
+        // 3. Lajitiedot (Kuvausteksti, evoluutioketjun URL)
         const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
         const speciesData = await speciesRes.json();
         setSpecies(speciesData);
 
-        // 4. Evolution Chain
+        // 4. Evoluutioketju
         if (speciesData.evolution_chain?.url) {
             const evoRes = await fetch(speciesData.evolution_chain.url);
             const evoData = await evoRes.json();
             
+            // Muutetaan monimutkainen API-data yksinkertaisemmaksi puuksi
             const parseChain = (chain: RawEvolutionLink): EvolutionNode => ({
                 species_name: chain.species.name,
                 species_url: chain.species.url,
@@ -202,19 +223,24 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
 
   if (!pokemonId) return null;
 
+  // Etsitään englanninkielinen kuvausteksti
   const description = species?.flavor_text_entries.find(
     (entry) => entry.language.name === 'en'
   )?.flavor_text.replace(/\f/g, ' ');
 
+  // --- RENDERÖINTI (UI) ---
   return (
+    // Taustan himmennys (Backdrop)
     <div 
       className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* Itse modaali-ikkuna */}
       <div 
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative animate-fade-in-up"
         onClick={e => e.stopPropagation()}
       >
+        {/* Sulkemisnappi (X) */}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-slate-700 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition z-10"
@@ -230,6 +256,8 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
           </div>
         ) : details && species ? (
           <div className="p-6">
+            
+            {/* YLÄOSA: KUVA JA NIMI */}
             <div className="text-center mb-6 border-b dark:border-slate-700 pb-6 border-gray-100">
               <img 
                 src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} 
@@ -255,7 +283,7 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
               </p>
             </div>
 
-            {/* BASE STATS */}
+            {/* BASE STATS -PALKIT */}
             <div className="mb-6">
               <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-3 text-sm uppercase tracking-wide">Base Stats</h3>
               <div className="space-y-2">
@@ -278,7 +306,7 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
               </div>
             </div>
 
-            {/* WEAKNESSES */}
+            {/* HEIKKOUDET (WEAKNESSES) */}
             {weaknesses.length > 0 && (
                <div className="mb-6">
                  <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-3 text-sm uppercase tracking-wide">Weak Against</h3>
@@ -305,6 +333,7 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
                 </div>
             )}
 
+            {/* FYYSISET MITAT & GENERAATIO */}
             <div className="grid grid-cols-2 gap-4 mb-6">
                <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl text-center">
                  <span className="block text-xs text-slate-400 dark:text-slate-400 uppercase font-bold">Height</span>
@@ -322,6 +351,7 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
                </div>
             </div>
 
+            {/* REGIONAL DEXES (Missä peleissä esiintyy) */}
             <div className="bg-blue-50 dark:bg-blue-900/30 p-5 rounded-xl border border-blue-100 dark:border-blue-800">
               <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
                 Appears in Regional Dexes:
@@ -340,6 +370,7 @@ export function PokemonModal({ pokemonId, onClose }: ModalProps) {
               </div>
             </div>
             
+            {/* LINKKI BULBAPEDIAAN */}
             <div className="mt-6 text-center">
               <a 
                 href={`https://bulbapedia.bulbagarden.net/wiki/${details.name}_(Pok%C3%A9mon)`}

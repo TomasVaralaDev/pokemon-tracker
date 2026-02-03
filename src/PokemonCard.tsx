@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import type { PokemonBasic } from './types';
 
+// --- TYYPPIMÄÄRITTELYT ---
+// Määrittelee mitä tietoa kortti tarvitsee toimiakseen
 interface PokemonCardProps {
   pokemon: PokemonBasic;
-  isCaught: boolean;
-  isShiny: boolean;
-  onToggle: () => void;
-  onToggleShiny: () => void;
-  onOpenDetails: () => void;
+  isCaught: boolean;      // Onko napattu?
+  isShiny: boolean;       // Onko shiny-muoto valittu?
+  onToggle: () => void;      // Funktio, joka ajetaan kun "catch"-nappia painetaan
+  onToggleShiny: () => void; // Funktio, joka ajetaan kun tähteä painetaan
+  onOpenDetails: () => void; // Funktio, joka avaa modaalin
 }
 
+// --- VÄRIKARTTA ---
+// Yhdistää Pokemonin tyypin (esim. 'fire') Tailwind CSS -väreihin
 const TYPE_COLORS: Record<string, string> = {
   normal: 'bg-neutral-400', fire: 'bg-red-500', water: 'bg-blue-500',
   electric: 'bg-yellow-400', grass: 'bg-green-500', ice: 'bg-cyan-300',
@@ -22,18 +26,23 @@ const TYPE_COLORS: Record<string, string> = {
 export function PokemonCard({ 
   pokemon, isCaught, isShiny, onToggle, onToggleShiny, onOpenDetails 
 }: PokemonCardProps) {
+  // --- TILA (STATE) ---
+  // Tyyppitieto (fire, water...) haetaan erikseen, joten se tarvitsee oman tilan
   const [types, setTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Määritetään kuvan URL: Näytetäänkö normaali vai Shiny-versio?
   const imageUrl = isShiny 
     ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${pokemon.id}.png`
     : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
 
+  // --- API-HAKU ---
+  // Haetaan Pokemonin tarkemmat tiedot (tässä tapauksessa tyypit) kun kortti ladataan
   useEffect(() => {
     fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.id}`)
       .then((res) => res.json())
       .then((data) => {
-        // TÄMÄ OLI AIEMMIN (t: any) -> NYT KORJATTU
+        // Kartutetaan tyypit (types) API-vastauksesta
         const typeNames = data.types.map((t: { type: { name: string } }) => t.type.name);
         setTypes(typeNames);
         setLoading(false);
@@ -41,20 +50,25 @@ export function PokemonCard({
       .catch(() => setLoading(false));
   }, [pokemon.id]);
 
+  // --- RENDERÖINTI (UI) ---
   return (
     <div
-      onClick={onOpenDetails}
+      onClick={onOpenDetails} // Koko korttia klikkaamalla avataan modaali
       className={`
         relative cursor-pointer p-3 rounded-xl border-2 transition-all duration-300 transform hover:scale-105
         flex flex-col items-center justify-between shadow-sm group min-h-[160px]
         dark:bg-slate-800 dark:border-slate-700
         ${isCaught 
+          // Jos napattu: Kirkas tausta, sininen reunus
           ? 'bg-white border-blue-500 dark:border-blue-500 opacity-100 ring-2 ring-blue-100 dark:ring-blue-900' 
+          // Jos ei napattu: Harmaa, läpinäkyvä (grayscale)
           : 'bg-white border-transparent opacity-60 grayscale hover:opacity-100 hover:grayscale-0'
         }
       `}
     >
+      {/* --- SHINY-TOGGLE (VASEN YLÄKULMA) --- */}
       <button
+        // e.stopPropagation() estää modaalin aukeamisen, kun painetaan vain tätä nappia
         onClick={(e) => { e.stopPropagation(); onToggleShiny(); }}
         className={`absolute top-2 left-2 p-1 rounded-full transition-colors z-20 
           ${isShiny ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-300 hover:text-yellow-400 dark:text-slate-600'}
@@ -66,6 +80,7 @@ export function PokemonCard({
         </svg>
       </button>
 
+      {/* --- CATCH-TOGGLE (OIKEA YLÄKULMA) --- */}
       <button
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border transition-colors z-20
@@ -81,6 +96,7 @@ export function PokemonCard({
         )}
       </button>
 
+      {/* --- POKEMONIN KUVA --- */}
       <img
         src={imageUrl}
         alt={pokemon.name}
@@ -88,6 +104,7 @@ export function PokemonCard({
         loading="lazy"
       />
 
+      {/* --- PERUSTIEDOT (NIMI & ID) --- */}
       <div className="text-center w-full">
         <span className="font-bold text-slate-700 dark:text-slate-200 capitalize text-sm block leading-tight">
           {pokemon.name}
@@ -96,10 +113,13 @@ export function PokemonCard({
           #{String(pokemon.id).padStart(4, '0')}
         </span>
 
+        {/* --- TYYPPIMERKIT (BADGES) --- */}
         <div className="flex justify-center gap-1 flex-wrap">
           {loading ? (
+            // Latausanimaatio (Skeleton) jos tyyppejä haetaan vielä
             <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
           ) : (
+            // Renderöi tyyppipillerit
             types.map((type) => (
               <span
                 key={type}
