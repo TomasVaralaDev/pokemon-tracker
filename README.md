@@ -68,29 +68,29 @@ Follow these steps to run the project locally.
 ```bash
 git clone [https://github.com/YOUR_GITHUB_USERNAME/pokemon-tracker.git](https://github.com/YOUR_GITHUB_USERNAME/pokemon-tracker.git)
 cd pokemon-tracker
-
-2. Install dependencies
-
+```
+### 2. Install dependencies
+```bash
 npm install
-
-3. Configure Environment Variables
+```
+### 3. Configure Environment Variables
 
 Create a .env.local file in the root directory. You need to set up a Firebase project to get these keys.
-
+```bash
 VITE_API_KEY=your_api_key_here
 VITE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_PROJECT_ID=your_project_id
 VITE_STORAGE_BUCKET=your_project.appspot.com
 VITE_MESSAGING_SENDER_ID=your_sender_id
 VITE_APP_ID=your_app_id
-
-4. Run the development server
-
+```
+### 4. Run the development server
+```bash
 npm run dev
-
+```
 Open http://localhost:5173 in your browser.
 
-📂 Project Structure
+### 📂 Project Structure
 
 src/
 ├── components/       # Reusable UI components
@@ -103,7 +103,7 @@ src/
 ├── types.ts          # TypeScript interfaces
 └── main.tsx          # Entry point
 
-🔒 Security Rules (Firestore)
+### 🔒 Security Rules (Firestore)
 
 The database is secured using Firestore Rules to ensure users can only modify their own data:
 
@@ -116,6 +116,6 @@ service cloud.firestore {
   }
 }
 
-📄 License
+### 📄 License
 
 This project is open source. Made with ❤️ by Tomas Varala
