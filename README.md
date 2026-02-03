@@ -10,7 +10,7 @@ A modern, responsive, and full-stack Progressive Web Application (PWA) designed 
 
 This application features real-time cloud synchronization, advanced filtering, and detailed data analysis including dynamic type weakness calculations and recursive evolution chains.
 
-🔗 **Live Demo:** [LISÄÄ VERCEL LINKKI TÄHÄN](https://sinun-projektisi.vercel.app)
+🔗 **Live Demo:** [LISÄÄ VERCEL LINKKI TÄHÄN](https://pokemon-tracker-peach.vercel.app/)
 
 ---
 
@@ -37,15 +37,6 @@ This application features real-time cloud synchronization, advanced filtering, a
 ### 📊 Statistics
 -   **Visual Progress:** Progress bars for each Generation.
 -   **Collection Stats:** Total completion percentage and Shiny counters.
-
----
-
-## 📸 Screenshots
-
-| Desktop View | Mobile View |
-|:---:|:---:|
-| ![Desktop](PLACEHOLDER_IMAGE_URL) | ![Mobile](PLACEHOLDER_IMAGE_URL) |
-| *Replace with your screenshot* | *Replace with your screenshot* |
 
 ---
 
