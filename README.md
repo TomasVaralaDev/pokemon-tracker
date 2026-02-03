@@ -91,7 +91,7 @@ npm run dev
 Open http://localhost:5173 in your browser.
 
 ### 📂 Project Structure
-
+```bash
 src/
 ├── components/       # Reusable UI components
 │   ├── PokemonCard.tsx   # Individual card with shiny/caught toggle
@@ -102,11 +102,11 @@ src/
 ├── firebase.ts       # Firebase initialization
 ├── types.ts          # TypeScript interfaces
 └── main.tsx          # Entry point
-
+```
 ### 🔒 Security Rules (Firestore)
 
 The database is secured using Firestore Rules to ensure users can only modify their own data:
-
+```bash
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -115,7 +115,7 @@ service cloud.firestore {
     }
   }
 }
-
+```
 ### 📄 License
 
 This project is open source. Made with ❤️ by Tomas Varala
