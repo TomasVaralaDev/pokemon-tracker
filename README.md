@@ -117,4 +117,4 @@ Ideas for future improvements:
 
 ### License
 
-This project is open source. Made by Tomas Varala
+Made by Tomas Varala
