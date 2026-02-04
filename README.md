@@ -1,4 +1,4 @@
-# 🔴 Pokémon Tracker (PWA)
+# Pokémon Tracker (PWA)
 
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -10,11 +10,11 @@ A modern, responsive, and full-stack Progressive Web Application (PWA) designed 
 
 This application features real-time cloud synchronization, advanced filtering, and detailed data analysis including dynamic type weakness calculations and recursive evolution chains.
 
-🔗 **Live Demo:** [LISÄÄ VERCEL LINKKI TÄHÄN](https://pokemon-tracker-peach.vercel.app/)
+**Live Demo:** [Pokemon Tracker](https://pokemon-tracker-peach.vercel.app/)
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 ### 📱 User Experience & PWA
 -   **Installable App:** Fully functional PWA that can be installed on iOS and Android home screens.
@@ -22,25 +22,25 @@ This application features real-time cloud synchronization, advanced filtering, a
 -   **Dark Mode:** Built-in theme switcher with persistent preference saving.
 -   **Offline Capable:** Caches assets for performance and basic offline functionality.
 
-### ☁️ Backend & Data
+### Backend & Data
 -   **Real-time Sync:** Uses **Firebase Firestore** to sync collection data instantly across devices when logged in.
 -   **Authentication:** Secure Google Sign-In via **Firebase Auth**.
 -   **Guest Mode:** Fully functional for non-logged-in users using LocalStorage.
 -   **Data Portability:** Export and Import collection data as JSON backups.
 
-### 🧠 Advanced Logic
+### Advanced Logic
 -   **Recursive Evolution Chains:** Visualizes complex evolution trees (including branching evolutions like Eevee) using recursive React components.
 -   **Dynamic Weakness Calculation:** Fetches type data from PokéAPI and mathematically calculates damage multipliers (2x, 4x, 0.5x, 0x) to show true weaknesses.
 -   **Smart Filtering:** Filter by Gen 1-9, Caught status, Missing, or Shiny forms.
 -   **Global Search:** Instant search with keyboard shortcuts (`/` to search).
 
-### 📊 Statistics
+### Statistics
 -   **Visual Progress:** Progress bars for each Generation.
 -   **Collection Stats:** Total completion percentage and Shiny counters.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Frontend:** React (Hooks, Functional Components), TypeScript
 * **Build Tool:** Vite
@@ -51,7 +51,7 @@ This application features real-time cloud synchronization, advanced filtering, a
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 Follow these steps to run the project locally.
 
@@ -81,7 +81,7 @@ npm run dev
 ```
 Open http://localhost:5173 in your browser.
 
-### 📂 Project Structure
+### Project Structure
 ```bash
 src/
 │── PokemonCard.tsx   # Individual card with shiny/caught toggle
@@ -93,7 +93,7 @@ src/
 ├── types.ts          # TypeScript interfaces
 └── main.tsx          # Entry point
 ```
-### 🔒 Security Rules (Firestore)
+### Security Rules (Firestore)
 
 The database is secured using Firestore Rules to ensure users can only modify their own data:
 ```bash
@@ -106,6 +106,6 @@ service cloud.firestore {
   }
 }
 ```
-### 📄 License
+### License
 
-This project is open source. Made with ❤️ by Tomas Varala
+This project is open source. Made by Tomas Varala
