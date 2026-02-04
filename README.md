@@ -84,11 +84,10 @@ Open http://localhost:5173 in your browser.
 ### 📂 Project Structure
 ```bash
 src/
-├── components/       # Reusable UI components
-│   ├── PokemonCard.tsx   # Individual card with shiny/caught toggle
-│   ├── PokemonModal.tsx  # Detailed view with recursion & API logic
-│   ├── StatsModal.tsx    # Statistics calculation
-│   └── Toast.tsx         # Notification system
+│── PokemonCard.tsx   # Individual card with shiny/caught toggle
+│── PokemonModal.tsx  # Detailed view with recursion & API logic
+│── StatsModal.tsx    # Statistics calculation
+│── Toast.tsx         # Notification system
 ├── App.tsx           # Main application logic & State management
 ├── firebase.ts       # Firebase initialization
 ├── types.ts          # TypeScript interfaces

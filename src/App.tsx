@@ -217,8 +217,8 @@ function App() {
   // Generaation vaihto
   const handleGenChange = (gen: typeof GENERATIONS[0]) => {
     setSelectedGen(gen);
-    setFilterMode('all'); 
-    setSortOrder('id-asc');
+    // setFilterMode('all'); // <--- POISTETTU: Filtteri säilyy
+    // setSortOrder('id-asc'); // <--- POISTETTU: Järjestys säilyy
     setVisibleCount(ITEMS_PER_PAGE);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -341,10 +341,11 @@ function App() {
       
       <div className="max-w-6xl mx-auto">
         
-        {/* YLÄPALKKI: STATS, LOGIN & DARKMODE */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        {/* HEADER: LOGIN & DARKMODE */}
+        {/* KORJAUS 1: 'relative' ja 'absolute' keskitys */}
+        <div className="relative flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
            {/* VASEN: Stats-nappi & Kirjautuminen */}
-           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start z-10 relative">
               <button onClick={() => setShowStats(true)} className="p-2 px-3 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 font-bold text-sm flex items-center gap-2">
                  📊 <span className="hidden sm:inline">Stats</span>
               </button>
@@ -366,13 +367,13 @@ function App() {
               )}
            </div>
           
-          {/* KESKELLÄ: Otsikko */}
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 dark:text-white tracking-tight text-center flex-1 order-first md:order-none">
+          {/* KESKELLÄ: Otsikko - Absoluuttisesti keskitetty desktopilla */}
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 dark:text-white tracking-tight text-center md:absolute md:left-1/2 md:-translate-x-1/2 w-full md:w-auto order-first md:order-none z-0">
             Pokémon Tracker
           </h1>
           
           {/* OIKEA: Dark Mode -nappi */}
-          <div className="w-full md:w-auto flex justify-end">
+          <div className="w-full md:w-auto flex justify-end z-10 relative">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-yellow-400 hover:scale-110 transition">
               {darkMode ? '☀️' : '🌙'}
             </button>
