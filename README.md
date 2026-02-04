@@ -106,6 +106,15 @@ service cloud.firestore {
   }
 }
 ```
+
+### Future Roadmap
+
+Ideas for future improvements:
+* [ ] **Team Builder:** Feature to create and save teams of 6 Pokémon.
+* [ ] **User Profiles:** Allow users to share their collection link with friends.
+* [ ] **Comparison Tool:** Compare stats between two different Pokémon.
+* [ ] **Offline Mode Upgrade:** Enhance Service Worker to allow full offline edits that sync when back online.
+
 ### License
 
 This project is open source. Made by Tomas Varala
