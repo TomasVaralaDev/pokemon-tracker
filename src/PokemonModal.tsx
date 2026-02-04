@@ -1,3 +1,4 @@
+import { cleanName } from './utils';
 import { useState, useEffect } from 'react';
 
 // --- RAJAPINNAT (INTERFACES) ---
@@ -61,10 +62,6 @@ interface PokemonSpecies {
 }
 
 // --- APUFUNKTIOT JA VAKIOT ---
-
-const cleanName = (name: string) => {
-  return name.replace('extended-', '').replace('original-', '').replace('-', ' ');
-};
 
 // Kaivaa ID:n URL-osoitteesta (esim. ".../pokemon/1/" -> "1")
 const getIdFromUrl = (url: string) => url.split('/').filter(Boolean).pop();

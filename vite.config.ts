@@ -1,15 +1,15 @@
-import { defineConfig } from 'vite'
+/// <reference types="vitest" />
+// KORJAUS: Vaihdetaan import 'vite' -> 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
-      // TÄMÄ UUSI OSIO SALLII PWA:N KEHITYSTILASSA:
       devOptions: {
         enabled: true
       },
@@ -35,4 +35,10 @@ export default defineConfig({
       }
     })
   ],
+  // Test-osio on nyt oikeassa paikassa ja tyypit toimivat
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+  }
 })

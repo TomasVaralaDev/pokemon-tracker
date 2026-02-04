@@ -115,6 +115,17 @@ Ideas for future improvements:
 * [ ] **Comparison Tool:** Compare stats between two different Pokémon.
 * [ ] **Offline Mode Upgrade:** Enhance Service Worker to allow full offline edits that sync when back online.
 
+### Documentation
+
+For a technical deep dive into how this project was engineered, check out the extended documentation:
+
+* [**Architecture & Decisions**](docs/ARCHITECTURE.md)
+    * *Explains the component structure, recursive algorithms, and "Guest Mode" data strategy.*
+* [**Database & Security**](docs/DATABASE.md)
+    * *Details the Firestore NoSQL schema design and security rules used to protect user data.*
+* [**Testing Strategy**](docs/TESTING.md)
+    * *Overview of the testing stack (Vitest, React Testing Library) and quality assurance practices.*
+
 ### License
 
 Made by Tomas Varala
