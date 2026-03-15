@@ -16,7 +16,7 @@ This application features real-time cloud synchronization, advanced filtering, a
 
 ## Key Features
 
-### 📱 User Experience & PWA
+### User Experience & PWA
 -   **Installable App:** Fully functional PWA that can be installed on iOS and Android home screens.
 -   **Responsive Design:** Optimized for both desktop and mobile layouts using Tailwind CSS.
 -   **Dark Mode:** Built-in theme switcher with persistent preference saving.
